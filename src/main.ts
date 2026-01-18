@@ -31,4 +31,5 @@ async function bootstrap() {
   Logger.log(`Application is running on: http://localhost:${port}`);
 }
 
+// eslint-disable-next-line @typescript-eslint/no-floating-promises
 bootstrap();

@@ -15,11 +15,10 @@
 src/
 ├─ main.ts # Точка входу, налаштування ValidationPipe та глобальних ExceptionFilter
 ├─ app.module.ts # Головний модуль
-├─ users/ # UsersModule  - окремий feature-модуль, який інкапсулює логіку, пов’язану з користувачами
-│ ├─ users.module.ts - UsersModule — декларація та експорт залежностей
-│ ├─ users.controller.ts — обробка HTTP-запитів;
-│ ├─ users.service.ts — бізнес-логіка; 
-
+├─ users/ # UsersModule — окремий feature-модуль
+│ ├─ users.module.ts # Декларація та експорт залежностей
+│ ├─ users.controller.ts # Обробка HTTP-запитів
+│ ├─ users.service.ts # Бізнес-логіка
 
 ## ⚙️ Конфігурація середовища
 Для роботи з конфігурацією використовується `@nestjs/config` з глобальним доступом.
@@ -33,7 +32,13 @@ src/
 
 
 ## ▶️ Запуск проєкту
-``` npm run start:dev
+```bash
+npm install
+```
+
+```bash
+npm run start:dev
+```
 
 Застосунок буде доступний за адресою: http://localhost:PORT
 

@@ -23,12 +23,9 @@ async function bootstrap() {
     }),
   );
 
-  //app.useGlobalFilters(new AllExceptionFilter())
-  // app.useGlobalInterceptors(new ResponseTimeInterseptor(), new HttpLoggerInterseptor())
-
   const port = process.env.PORT || 4422;
   await app.listen(port);
-  Logger.log(`Application is running on: http://localhost:${port}`);
+  Logger.log(`🚀 Application is running on: http://localhost:${port}`);
 }
 
 // eslint-disable-next-line @typescript-eslint/no-floating-promises

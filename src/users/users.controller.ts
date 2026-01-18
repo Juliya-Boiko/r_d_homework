@@ -11,6 +11,8 @@ import {
 // import { CreateCatDto } from './dto/create-cat.dto';
 import { UsersService } from './users.service';
 import type { IUser } from './interfaces/user.interface';
+import { CreateUserDto } from './dto/create-user.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
 
 @Controller('users')
 export class UsersController {
@@ -27,16 +29,13 @@ export class UsersController {
   }
 
   @Post()
-  create(@Body() user: IUser) {
-    this.usersService.create(user);
+  create(@Body() dto: CreateUserDto): IUser {
+    return this.usersService.create(dto);
   }
 
   @Patch(':id')
-  update(
-    @Param('id') id: string,
-    @Body() user: Partial<IUser>,
-  ): IUser | undefined {
-    return this.usersService.update(id, user);
+  update(@Param('id') id: string, @Body() dto: UpdateUserDto): IUser | undefined {
+    return this.usersService.update(id, dto);
   }
 
   @Delete(':id')

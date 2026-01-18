@@ -1,18 +1,33 @@
-import { Module } from '@nestjs/common';
-// import { AppController } from './app.controller';
-// import { AppService } from './app.service';
+import {
+  MiddlewareConsumer,
+  Module,
+  NestModule,
+  OnModuleDestroy,
+  OnModuleInit,
+} from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { UsersController } from './users/users.controller';
-import { UsersService } from './users/users.service';
+import { UsersModule } from './users/users.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: '.env',
+      envFilePath: `.env.${process.env.NODE_ENV || 'local'}`,
     }),
+    UsersModule,
   ],
-  controllers: [UsersController],
-  providers: [UsersService],
 })
-export class AppModule { }
+export class AppModule implements NestModule, OnModuleInit, OnModuleDestroy {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  configure(consumer: MiddlewareConsumer) {
+    // consumer.apply(RequestMiddleware).forRoutes('*');
+  }
+
+  onModuleInit() {
+    console.log('🟢 AppModule initialized');
+  }
+
+  onModuleDestroy() {
+    console.log('🔴 AppModule destroyed');
+  }
+}

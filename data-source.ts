@@ -12,5 +12,3 @@ export const AppDataSource = new DataSource({
   migrations: ['src/migrations/*{.ts,.js}'],
   synchronize: false,
 });
-
-export default AppDataSource;

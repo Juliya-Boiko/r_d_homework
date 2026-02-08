@@ -8,7 +8,7 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { Order } from '../orders/order.entity';
-import { UserRole } from 'src/common/enums/user-role.enum';
+import { UserRole } from '../common/enums/user-role.enum';
 
 @Entity('users') // клас відповідає таблиці users у PostgreSQL
 @Index('IDX_users_email_unique', ['email'], { unique: true }) // унікальний індекс на email

@@ -1,6 +1,6 @@
 import { BadRequestException, Body, Controller, Get, Post, Query } from '@nestjs/common';
 import { OrdersService } from './orders.service';
-import { OrderStatus } from 'src/common/enums/order-status.enum';
+import { OrderStatus } from '../common/enums/order-status.enum';
 
 type CreateOrderBody = {
   userId: string;
@@ -10,7 +10,7 @@ type CreateOrderBody = {
 
 @Controller('orders')
 export class OrdersController {
-  constructor(private readonly ordersService: OrdersService) {}
+  constructor(private readonly ordersService: OrdersService) { }
 
   @Post()
   async createOrder(@Body() body: CreateOrderBody) {

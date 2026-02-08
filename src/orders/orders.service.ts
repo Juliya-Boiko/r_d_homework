@@ -1,7 +1,9 @@
 import {
   BadRequestException,
   ConflictException,
+  HttpException,
   Injectable,
+  InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -10,7 +12,7 @@ import { Order } from './order.entity';
 import { OrderItem } from './order-item.entity';
 import { Product } from '../products/product.entity';
 import { User } from '../users/user.entity';
-import { OrderStatus } from 'src/common/enums/order-status.enum';
+import { OrderStatus } from '../common/enums/order-status.enum';
 
 export type CreateOrderItemInput = {
   productId: string;
@@ -49,21 +51,20 @@ export class OrdersService {
       throw new BadRequestException('userId and items are required');
     }
 
+    // Перевірка користувача
     const user = await this.usersRepository.findOne({ where: { id: input.userId } });
-    if (!user) {
-      throw new NotFoundException('User not found');
-    }
+    if (!user) throw new NotFoundException(`User with id "${input.userId}" not found`);
 
+    // Ідемпотентність: якщо ключ вже існує, повертаємо існуюче замовлення
     if (input.idempotencyKey) {
-      const existing = await this.ordersRepository.findOne({
+      const existingOrder = await this.ordersRepository.findOne({
         where: { idempotencyKey: input.idempotencyKey },
         relations: { user: true, items: { product: true } },
       });
-      if (existing) {
-        return existing;
-      }
+      if (existingOrder) return existingOrder;
     }
 
+    // Унікальні productId та отримання продуктів
     const productIds = [...new Set(input.items.map((item) => item.productId))];
     const products = await this.productsRepository.find({
       where: { id: In(productIds) },
@@ -73,94 +74,86 @@ export class OrdersService {
       throw new NotFoundException('One or more products were not found');
     }
 
-    const productsById = new Map(products.map((product) => [product.id, product]));
+    const productsById = new Map(products.map((p) => [p.id, p]));
+
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
 
     try {
-      return await this.dataSource.transaction(async (manager) => {
-        const orderRepository = manager.getRepository(Order);
-        const orderItemRepository = manager.getRepository(OrderItem);
-        const productRepository = manager.getRepository(Product);
+      // Блокування продуктів для уникнення race condition
+      const lockedProducts = await queryRunner.manager
+        .getRepository(Product)
+        .createQueryBuilder('product')
+        .where('product.id IN (:...ids)', { ids: productIds })
+        .setLock('pessimistic_write')
+        .getMany();
 
-        const lockedProducts = await productRepository
-          .createQueryBuilder('product')
-          .where('product.id IN (:...ids)', { ids: productIds })
-          .setLock('pessimistic_write')
-          .getMany();
+      const lockedById = new Map(lockedProducts.map((p) => [p.id, p]));
 
-        const lockedById = new Map(lockedProducts.map((product) => [product.id, product]));
-
-        for (const item of input.items) {
-          const product = lockedById.get(item.productId);
-          if (!product) {
-            throw new NotFoundException('Product not found');
-          }
-          if (item.quantity <= 0) {
-            throw new BadRequestException('Quantity must be greater than zero');
-          }
-          if (product.stock < item.quantity) {
-            throw new ConflictException('Insufficient stock');
-          }
-        }
-
-        for (const item of input.items) {
-          const product = lockedById.get(item.productId);
-          if (!product) {
-            continue;
-          }
-          product.stock -= item.quantity;
-        }
-
-        await productRepository.save([...lockedById.values()]);
-
-        const order = orderRepository.create({
-          userId: user.id,
-          user,
-          status: OrderStatus.CREATED,
-          idempotencyKey: input.idempotencyKey ?? null,
-        });
-        await orderRepository.save(order);
-
-        const orderItems = input.items.map((item) => {
-          const product = productsById.get(item.productId);
-          if (!product) {
-            throw new NotFoundException('Product not found');
-          }
-
-          return orderItemRepository.create({
-            orderId: order.id,
-            order,
-            productId: product.id,
-            product,
-            quantity: item.quantity,
-            priceSnapshot: product.price,
-          });
-        });
-
-        await orderItemRepository.save(orderItems);
-
-        const created = await orderRepository.findOne({
-          where: { id: order.id },
-          relations: { user: true, items: { product: true } },
-        });
-
-        if (!created) {
-          throw new Error('Order creation failed');
-        }
-
-        return created;
-      });
-    } catch (error: any) {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-      if (error?.code === '23505' && input.idempotencyKey) {
-        const existing = await this.ordersRepository.findOne({
-          where: { idempotencyKey: input.idempotencyKey },
-          relations: { user: true, items: { product: true } },
-        });
-        if (existing) {
-          return existing;
-        }
+      // Перевірка stock
+      for (const item of input.items) {
+        const product = lockedById.get(item.productId);
+        if (!product) throw new NotFoundException(`Product with id "${item.productId}" not found`);
+        if (item.quantity <= 0) throw new BadRequestException('Quantity must be greater than zero');
+        if (product.stock < item.quantity)
+          throw new ConflictException(`Insufficient stock for product "${product.id}"`);
       }
+
+      // Оновлення stock
+      for (const item of input.items) {
+        const product = lockedById.get(item.productId)!;
+        product.stock -= item.quantity;
+      }
+      await queryRunner.manager.getRepository(Product).save([...lockedById.values()]);
+
+      // Створення order
+      const order = queryRunner.manager.getRepository(Order).create({
+        userId: user.id,
+        user,
+        status: OrderStatus.CREATED,
+        idempotencyKey: input.idempotencyKey ?? null,
+      });
+      await queryRunner.manager.getRepository(Order).save(order);
+
+      // Створення order items
+      const orderItems = input.items.map((item) => {
+        const product = productsById.get(item.productId)!;
+        return queryRunner.manager.getRepository(OrderItem).create({
+          orderId: order.id,
+          order,
+          productId: product.id,
+          product,
+          quantity: item.quantity,
+          priceSnapshot: product.price,
+        });
+      });
+      await queryRunner.manager.getRepository(OrderItem).save(orderItems);
+
+      await queryRunner.commitTransaction();
+
+      await queryRunner.commitTransaction();
+      return order;
+    } catch (error: any) {
+      await queryRunner.rollbackTransaction();
+
+      if (error instanceof HttpException) {
+        throw error; // 400 / 404 / 409
+      }
+
+      throw new InternalServerErrorException('Failed to create order');
+      // Додаткова ідемпотентність: якщо дублюється ключ
+      // if (error?.code === '23505' && input.idempotencyKey) {
+      //   const existing = await this.ordersRepository.findOne({
+      //     where: { idempotencyKey: input.idempotencyKey },
+      //     relations: { user: true, items: { product: true } },
+      //   });
+      //   if (existing) return existing;
+      // }
+
       throw error;
+    } finally {
+      await queryRunner.release();
     }
   }
 

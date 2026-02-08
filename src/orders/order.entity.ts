@@ -11,7 +11,7 @@ import {
 } from 'typeorm';
 import { User } from '../users/user.entity';
 import { OrderItem } from './order-item.entity';
-import { OrderStatus } from 'src/common/enums/order-status.enum';
+import { OrderStatus } from '../common/enums/order-status.enum';
 
 @Entity('orders') // клас відповідає таблиці orders у PostgreSQL
 @Index('IDX_orders_user_id', ['userId']) // індекс для швидких запитів типу find({ where: { userId } })

@@ -6,10 +6,11 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, In, Repository } from 'typeorm';
-import { Order, OrderStatus } from './order.entity';
+import { Order } from './order.entity';
 import { OrderItem } from './order-item.entity';
 import { Product } from '../products/product.entity';
 import { User } from '../users/user.entity';
+import { OrderStatus } from 'src/common/enums/order-status.enum';
 
 export type CreateOrderItemInput = {
   productId: string;
@@ -149,6 +150,7 @@ export class OrdersService {
         return created;
       });
     } catch (error: any) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       if (error?.code === '23505' && input.idempotencyKey) {
         const existing = await this.ordersRepository.findOne({
           where: { idempotencyKey: input.idempotencyKey },

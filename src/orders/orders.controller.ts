@@ -1,6 +1,6 @@
 import { BadRequestException, Body, Controller, Get, Post, Query } from '@nestjs/common';
 import { OrdersService } from './orders.service';
-import { OrderStatus } from './order.entity';
+import { OrderStatus } from 'src/common/enums/order-status.enum';
 
 type CreateOrderBody = {
   userId: string;

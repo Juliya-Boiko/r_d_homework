@@ -11,16 +11,12 @@ import {
 } from 'typeorm';
 import { User } from '../users/user.entity';
 import { OrderItem } from './order-item.entity';
+import { OrderStatus } from 'src/common/enums/order-status.enum';
 
-export enum OrderStatus {
-  CREATED = 'CREATED',
-  PAID = 'PAID',
-  CANCELLED = 'CANCELLED',
-}
-
-@Entity('orders')
-@Index('IDX_orders_user_id', ['userId'])
-@Index('IDX_orders_created_at', ['createdAt'])
+@Entity('orders') // клас відповідає таблиці orders у PostgreSQL
+@Index('IDX_orders_user_id', ['userId']) // індекс для швидких запитів типу find({ where: { userId } })
+@Index('IDX_orders_created_at', ['createdAt']) // індекс для швидких запитів по даті створення
+@Index('IDX_orders_idempotency_key_unique', ['idempotencyKey'], { unique: true })
 export class Order {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -28,12 +24,12 @@ export class Order {
   @Column({ type: 'uuid', name: 'user_id' })
   userId: string;
 
-  @ManyToOne(() => User, (user) => user.orders, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'user_id' })
-  user: User;
+  @ManyToOne(() => User, (user) => user.orders, { onDelete: 'CASCADE' }) // при видаленні юзера видаляються всі його замовлення
+  @JoinColumn({ name: 'user_id' }) // вказуємо, що колонка user_id є зовнішнім ключем до таблиці users
+  user: User; // зв'язок "багато замовлень-до-одного юзера"
 
   @OneToMany(() => OrderItem, (item) => item.order)
-  items: OrderItem[];
+  items: OrderItem[]; // зв'язок "одне замовлення-до-багатьох позицій замовлення"
 
   @Column({
     type: 'enum',

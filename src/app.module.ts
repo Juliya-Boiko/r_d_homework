@@ -15,7 +15,7 @@ import { OrdersModule } from './orders/orders.module';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: `.env.${process.env.NODE_ENV || 'local'}`,
+      envFilePath: '.env',
     }),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
@@ -51,6 +51,13 @@ export class AppModule implements NestModule, OnModuleInit, OnModuleDestroy {
 
   onModuleInit(): void {
     console.log('🟢 AppModule initialized');
+    const configService = new ConfigService();
+    console.log(
+      'DB:',
+      configService.get('DB_HOST'),
+      configService.get('DB_USER'),
+      configService.get('DB_NAME'),
+    );
   }
 
   onModuleDestroy(): void {

@@ -9,10 +9,10 @@ import {
 } from 'typeorm';
 import { OrderItem } from '../orders/order-item.entity';
 
-@Entity('products')
+@Entity('products') // клас відповідає таблиці products у PostgreSQL
 @Index('IDX_products_title_unique', ['title'], { unique: true })
 export class Product {
-  @PrimaryGeneratedColumn('uuid')
+  @PrimaryGeneratedColumn('uuid') // первинний ключ, автоматично генерується UUID
   id: string;
 
   @Column({ type: 'varchar', length: 200 })
@@ -28,7 +28,7 @@ export class Product {
   stock: number;
 
   @OneToMany(() => OrderItem, (item) => item.product)
-  orderItems: OrderItem[];
+  orderItems: OrderItem[]; // зв'язок "один продукт-до-багатьох позицій замовлення"
 
   @CreateDateColumn({ type: 'timestamptz', name: 'created_at' })
   createdAt: Date;

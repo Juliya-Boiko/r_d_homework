@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { UsersModule } from './users/users.module';
-import { TypeOrmModule } from '@nestjs/typeorm';
+import { TypeOrmModule, TypeOrmModuleOptions } from '@nestjs/typeorm';
 import { CorrelationIdMiddleware } from './common/middleware/correlation-id.middleware';
 @Module({
   imports: [
@@ -18,16 +18,24 @@ import { CorrelationIdMiddleware } from './common/middleware/correlation-id.midd
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (configService: ConfigService) => ({
-        type: 'postgres',
-        host: configService.getOrThrow<string>('DB_HOST'),
-        port: Number(configService.getOrThrow<string>('DB_PORT')),
-        username: configService.getOrThrow<string>('DB_USER'),
-        password: configService.getOrThrow<string>('DB_PASSWORD'),
-        database: configService.getOrThrow<string>('DB_NAME'),
-        autoLoadEntities: true,
-        synchronize: false,
-      }),
+      useFactory: (configService: ConfigService): TypeOrmModuleOptions => {
+        const host = configService.getOrThrow<string>('DB_HOST');
+        const port = Number(configService.getOrThrow<string>('DB_PORT'));
+        const username = configService.getOrThrow<string>('DB_USER');
+        const password = configService.getOrThrow<string>('DB_PASSWORD');
+        const database = configService.getOrThrow<string>('DB_NAME');
+
+        return {
+          type: 'postgres',
+          host,
+          port,
+          username,
+          password,
+          database,
+          autoLoadEntities: true,
+          synchronize: false,
+        };
+      },
     }),
     UsersModule,
     // ProductsModule,
@@ -39,11 +47,11 @@ export class AppModule implements NestModule, OnModuleInit, OnModuleDestroy {
     consumer.apply(CorrelationIdMiddleware).forRoutes('*');
   }
 
-  onModuleInit() {
+  onModuleInit(): void {
     console.log('🟢 AppModule initialized');
   }
 
-  onModuleDestroy() {
+  onModuleDestroy(): void {
     console.log('🔴 AppModule destroyed');
   }
 }

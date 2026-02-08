@@ -41,7 +41,7 @@ export class OrdersService {
     private readonly productsRepository: Repository<Product>,
     @InjectRepository(User)
     private readonly usersRepository: Repository<User>,
-  ) { }
+  ) {}
 
   async createOrder(input: CreateOrderInput): Promise<Order> {
     if (!input.userId || input.items.length === 0) {

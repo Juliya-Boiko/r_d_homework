@@ -6,14 +6,16 @@ import {
   OnModuleInit,
 } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { UsersModule } from './users/users.module';
 import { TypeOrmModule, TypeOrmModuleOptions } from '@nestjs/typeorm';
 import { CorrelationIdMiddleware } from './common/middleware/correlation-id.middleware';
+import { UsersModule } from './users/users.module';
+import { ProductsModule } from './products/products.module';
+import { OrdersModule } from './orders/orders.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      // envFilePath: `.env.${process.env.NODE_ENV || 'local'}`,
+      envFilePath: `.env.${process.env.NODE_ENV || 'local'}`,
     }),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
@@ -38,8 +40,8 @@ import { CorrelationIdMiddleware } from './common/middleware/correlation-id.midd
       },
     }),
     UsersModule,
-    // ProductsModule,
-    // OrdersModule
+    ProductsModule,
+    OrdersModule,
   ],
 })
 export class AppModule implements NestModule, OnModuleInit, OnModuleDestroy {

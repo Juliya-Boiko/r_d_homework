@@ -10,7 +10,7 @@ type CreateOrderBody = {
 
 @Controller('orders')
 export class OrdersController {
-  constructor(private readonly ordersService: OrdersService) { }
+  constructor(private readonly ordersService: OrdersService) {}
 
   @Post()
   async createOrder(@Body() body: CreateOrderBody) {

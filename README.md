@@ -53,3 +53,27 @@ npm run start:dev
 - Масштабованість — легко додавати нові feature-модулі
 - Типізація — TypeScript забезпечує безпечну роботу з даними
 - Конфігурація середовища — централізована та зрозуміла структура
+
+
+### Concurrency & Data Consistency
+
+- Oversell protection is implemented using pessimistic locking.
+- Product rows are locked inside a database transaction before stock updates
+- This guarantees consistency under concurrent requests and prevents overselling
+- All write operations are executed inside a transaction with: automatic rollback on error and guaranteed queryRunner release
+
+### Error Handling & Idempotency
+- 409 Conflict is returned when there is insufficient stock
+(business rule violation)
+- Duplicate idempotencyKey requests return the existing order
+(idempotent behavior)
+- Transaction safety ensures no partial writes or leaked connections
+
+### Performance Optimization
+! EXPLAIN ANALYZE was executed before and after index creation to validate query performance.
+Hot query identified: order listing with filters and multiple JOINs, heavily used in the admin panel.
+Optimization applied:
+- Added a composite index: orders (status, created_at DESC)
+- This optimizes:
+  - - filtering by order status
+  - - sorting by creation date (latest first)

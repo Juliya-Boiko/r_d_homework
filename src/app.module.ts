@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { UsersModule } from './users/users.module';
-
+import { CorrelationIdMiddleware } from './common/middleware/correlation-id.middleware';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -18,9 +18,8 @@ import { UsersModule } from './users/users.module';
   ],
 })
 export class AppModule implements NestModule, OnModuleInit, OnModuleDestroy {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   configure(consumer: MiddlewareConsumer) {
-    // consumer.apply(RequestMiddleware).forRoutes('*');
+    consumer.apply(CorrelationIdMiddleware).forRoutes('*');
   }
 
   onModuleInit() {

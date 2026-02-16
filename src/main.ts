@@ -1,6 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
@@ -20,20 +17,6 @@ async function bootstrap() {
       transform: true,
       whitelist: true,
       forbidNonWhitelisted: true,
-      // exceptionFactory: (errors) => {
-      //   return new (require('@nestjs/common').BadRequestException)({
-      //     code: 'VALIDATION_FAILED',
-      //     message: 'Validation failed',
-      //     details: mapValidationErrors(errors as any[]),
-      //   });
-      // },
-      // transformOptions: {
-      //   enableImplicitConversion: true,
-      // },
-      // validationError: {
-      //   target: false,
-      //   value: false,
-      // },
     }),
   );
 

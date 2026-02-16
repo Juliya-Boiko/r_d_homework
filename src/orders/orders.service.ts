@@ -44,7 +44,7 @@ export class OrdersService {
     private readonly productsRepository: Repository<Product>,
     @InjectRepository(User)
     private readonly usersRepository: Repository<User>,
-  ) {}
+  ) { }
 
   async createOrder(input: CreateOrderInput): Promise<Order> {
     if (!input.userId || input.items.length === 0) {
@@ -132,26 +132,28 @@ export class OrdersService {
 
       await queryRunner.commitTransaction();
 
-      await queryRunner.commitTransaction();
-      return order;
+      const createdOrder = await queryRunner.manager.getRepository(Order).findOne({
+        where: { id: order.id },
+        relations: { user: true, items: { product: true } },
+      });
+      return createdOrder!;
     } catch (error: any) {
       await queryRunner.rollbackTransaction();
+
+      // 23505 idempotencyKey handling
+      if (error?.code === '23505' && input.idempotencyKey) {
+        const existing = await this.ordersRepository.findOne({
+          where: { idempotencyKey: input.idempotencyKey },
+          relations: { user: true, items: { product: true } },
+        });
+        if (existing) return existing;
+      }
 
       if (error instanceof HttpException) {
         throw error; // 400 / 404 / 409
       }
 
       throw new InternalServerErrorException('Failed to create order');
-      // Додаткова ідемпотентність: якщо дублюється ключ
-      // if (error?.code === '23505' && input.idempotencyKey) {
-      //   const existing = await this.ordersRepository.findOne({
-      //     where: { idempotencyKey: input.idempotencyKey },
-      //     relations: { user: true, items: { product: true } },
-      //   });
-      //   if (existing) return existing;
-      // }
-
-      throw error;
     } finally {
       await queryRunner.release();
     }

@@ -35,7 +35,7 @@ import { ReportsModule } from './reports/reports.module';
         autoLoadEntities: true,
         synchronize: false,
         logging: ['query'],
-        logger: new TypeOrmRequestContextLogger(),
+        // logger: new TypeOrmRequestContextLogger(),
       }),
     }),
     AppGraphqlModule,

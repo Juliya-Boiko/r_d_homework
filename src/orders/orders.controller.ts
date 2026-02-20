@@ -50,13 +50,15 @@ export class OrdersController {
       throw new BadRequestException('to must be valid date');
     }
 
-    return this.ordersService.listOrders({
-      userId,
-      status,
-      from: fromDate,
-      to: toDate,
-      limit: safeLimit,
-      offset: safeOffset,
-    });
+    return this.ordersService.findAllPaginated({}, { limit: safeLimit, offset: safeOffset });
+
+    // return this.ordersService.listOrders({
+    //   userId,
+    //   status,
+    //   from: fromDate,
+    //   to: toDate,
+    //   limit: safeLimit,
+    //   offset: safeOffset,
+    // });
   }
 }

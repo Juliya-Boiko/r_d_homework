@@ -113,3 +113,33 @@ Execution Time: 0.071 ms
 - Поле totalCount дозволяє фронтенду обчислити кількість сторінок без додаткових запитів до БД.
 - Структура-обгортка дозволяє додавати нові поля (наприклад, pageInfo).
 - Розділення фільтрації та пагінації через @InputType зберігає резолвер «тонкими».
+
+## N+1 та DataLoader
+**Щоб перевірити наявність проблеми N+1:**
+- logging: true у TypeOrmModule.
+- Виконали GraphQL-запит
+query {
+  orders {
+    id
+    items {
+      id
+      product {
+        id
+        title
+      }
+    }
+  }
+}
+- У консолі: 
+SELECT * FROM orders LIMIT 100;
+SELECT * FROM order_items WHERE order_id = '0ad057d1-6dca-...';
+SELECT * FROM products WHERE id = 'a26fc917-8ea1-...';
+SELECT * FROM products WHERE id = '15360d99-ff5c-...';
+SELECT * FROM order_items WHERE order_id = '22222222-2222-...';
+SELECT * FROM products WHERE id = 'a26fc917-8ea1-...';
+SELECT * FROM products WHERE id = '15360d99-ff5c-...';
+...
+
+**Після DataLoader (optimized)**
+SELECT DISTINCT ... FROM orders LEFT JOIN order_items ... LEFT JOIN users ... LIMIT 100;
+SELECT * FROM products WHERE id IN ('a26fc917-8ea1-...', '15360d99-ff5c-...', '75cf1b7e-affe-...', 'b613925c-eb59-...');

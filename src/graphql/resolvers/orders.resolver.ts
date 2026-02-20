@@ -1,17 +1,17 @@
-import { OrdersService } from '../../orders/orders.service'; // шлях до вашого сервісу
+import { OrdersService } from '../../orders/orders.service';
 import { Order } from '../../orders/order.entity';
 import { OrdersConnection } from '../../orders/dto/orders-connection.type';
 import { OrdersFilterInput, OrdersPaginationInput } from '../../orders/dto/resolvers.inputs';
 import { Resolver, Query, ResolveField, Parent, Context, Args } from '@nestjs/graphql';
 import type { GraphQLContext } from '../loaders/loaders.types';
 import { User } from '../../users/user.entity';
-import { UsersService } from '../../users/users.service'; // Використовуйте сервіс замість репозиторію
+import { UsersService } from '../../users/users.service';
 
 @Resolver(() => Order)
 export class OrdersResolver {
   constructor(
     private readonly ordersService: OrdersService,
-    private readonly usersService: UsersService, // Використовуйте сервіс замість репозиторію
+    private readonly usersService: UsersService,
   ) { }
 
   @Query(() => OrdersConnection, { name: 'orders' })

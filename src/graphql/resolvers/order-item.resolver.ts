@@ -16,9 +16,8 @@ export class OrderItemResolver {
     @Context() ctx: GraphQLContext,
   ): Promise<Product | null> {
     if (ctx.strategy === 'naive') {
-      // Делегуємо пошук сервісу продуктів
+      // N+1 запити
       return this.productsService.findById(orderItem.productId);
-      // return this.productsRepository.findOne({ where: { id: orderItem.productId } });
     }
 
     // DataLoader залишається без змін

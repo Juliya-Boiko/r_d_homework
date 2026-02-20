@@ -7,12 +7,22 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, In, Repository } from 'typeorm';
+import {
+  DataSource,
+  Between,
+  MoreThanOrEqual,
+  FindOptionsWhere,
+  In,
+  Repository,
+  LessThanOrEqual,
+} from 'typeorm';
 import { Order } from './order.entity';
 import { OrderItem } from './order-item.entity';
 import { Product } from '../products/product.entity';
 import { User } from '../users/user.entity';
 import { OrderStatus } from '../common/enums/order-status.enum';
+import { OrdersFilterInput, OrdersPaginationInput } from './dto/resolvers.inputs';
+import { OrdersConnection } from './dto/orders-connection.type';
 
 export type CreateOrderItemInput = {
   productId: string;
@@ -141,6 +151,7 @@ export class OrdersService {
       await queryRunner.rollbackTransaction();
 
       // 23505 idempotencyKey handling
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       if (error?.code === '23505' && input.idempotencyKey) {
         const existing = await this.ordersRepository.findOne({
           where: { idempotencyKey: input.idempotencyKey },
@@ -186,5 +197,35 @@ export class OrdersService {
     }
 
     return qb.getMany();
+  }
+
+  async findAllPaginated(
+    filter?: OrdersFilterInput,
+    pagination: OrdersPaginationInput = { offset: 0, limit: 10 },
+  ): Promise<OrdersConnection> {
+    const where: FindOptionsWhere<Order> = {};
+
+    if (filter?.status) {
+      where.status = filter.status;
+    }
+
+    // Логіка фільтрації по датах
+    if (filter?.dateFrom && filter?.dateTo) {
+      where.createdAt = Between(filter.dateFrom, filter.dateTo);
+    } else if (filter?.dateFrom) {
+      where.createdAt = MoreThanOrEqual(filter.dateFrom);
+    } else if (filter?.dateTo) {
+      where.createdAt = LessThanOrEqual(filter.dateTo);
+    }
+
+    const [data, totalCount] = await this.ordersRepository.findAndCount({
+      where,
+      relations: { items: { product: true } },
+      order: { createdAt: 'DESC' },
+      take: pagination.limit,
+      skip: pagination.offset,
+    });
+
+    return { data, totalCount };
   }
 }

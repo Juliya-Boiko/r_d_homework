@@ -3,6 +3,7 @@
 import { ArgumentsHost, Catch, ExceptionFilter, HttpException, HttpStatus } from '@nestjs/common';
 import type { Request, Response } from 'express';
 import { DomainError } from '../errors/domain.errors';
+import { GraphQLError } from 'graphql';
 
 type ErrorBody = {
   code: string;
@@ -61,8 +62,31 @@ export class HttpExceptionFilter implements ExceptionFilter {
     }
 
     if (type === 'graphql') {
-      // GraphQL expects просто викинути помилку
-      throw exception;
+      let message = 'Internal server error';
+      let code = 'INTERNAL_ERROR';
+
+      if (exception instanceof HttpException) {
+        const status = exception.getStatus();
+        const res = exception.getResponse() as any;
+
+        if (Array.isArray(res?.message)) {
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+          message = res.message.join(', ');
+        } else if (res?.message) {
+          message = res.message;
+        } else {
+          message = exception.message;
+        }
+
+        code = status >= 500 ? 'INTERNAL_ERROR' : 'BAD_REQUEST';
+      } else if (exception instanceof DomainError) {
+        message = exception.message;
+        code = exception.code;
+      }
+
+      throw new GraphQLError(message, {
+        extensions: { code },
+      });
     }
   }
 }

@@ -6,13 +6,14 @@ import { Resolver, Query, ResolveField, Parent, Context, Args } from '@nestjs/gr
 import type { GraphQLContext } from '../loaders/loaders.types';
 import { User } from '../../users/user.entity';
 import { UsersService } from '../../users/users.service';
+import { BadRequestException } from '@nestjs/common';
 
 @Resolver(() => Order)
 export class OrdersResolver {
   constructor(
     private readonly ordersService: OrdersService,
     private readonly usersService: UsersService,
-  ) { }
+  ) {}
 
   @Query(() => OrdersConnection, { name: 'orders' })
   async getOrders(
@@ -24,6 +25,12 @@ export class OrdersResolver {
     pagination: OrdersPaginationInput,
   ): Promise<OrdersConnection> {
     ctx.strategy = 'optimized';
+    if (pagination?.limit && pagination.limit <= 0) {
+      throw new BadRequestException('Limit must be greater than zero');
+    }
+    if (pagination?.offset && pagination.offset < 0) {
+      throw new BadRequestException('Offset must be zero or positive');
+    }
     const limit = pagination?.limit ?? 10;
     const offset = pagination?.offset ?? 0;
 

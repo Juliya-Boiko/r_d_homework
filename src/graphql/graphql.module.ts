@@ -26,6 +26,12 @@ import { HelloResolver } from './resolvers/hello.resolver';
           loaders: loadersFactory.create(),
           strategy: 'optimized' as const,
         }),
+        formatError: (error) => {
+          return {
+            message: error.message,
+            code: error.extensions?.code ?? 'INTERNAL_ERROR',
+          };
+        },
       }),
     }),
   ],

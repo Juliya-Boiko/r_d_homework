@@ -196,7 +196,12 @@ export class OrdersService {
       qb.andWhere('orders.createdAt <= :to', { to: input.to });
     }
 
-    return qb.getMany();
+    try {
+      return qb.getMany();
+    } catch (error) {
+      console.error('DB error in listOrders:', error);
+      throw new InternalServerErrorException('Failed to fetch orders');
+    }
   }
 
   async findAllPaginated(
@@ -218,14 +223,19 @@ export class OrdersService {
       where.createdAt = LessThanOrEqual(filter.dateTo);
     }
 
-    const [data, totalCount] = await this.ordersRepository.findAndCount({
-      where,
-      relations: { items: { product: true } },
-      order: { createdAt: 'DESC' },
-      take: pagination.limit,
-      skip: pagination.offset,
-    });
+    try {
+      const [data, totalCount] = await this.ordersRepository.findAndCount({
+        where,
+        relations: { items: { product: true } },
+        order: { createdAt: 'DESC' },
+        take: pagination.limit,
+        skip: pagination.offset,
+      });
 
-    return { data, totalCount };
+      return { data, totalCount };
+    } catch (error) {
+      console.error('DB error in findAllPaginated:', error);
+      throw new InternalServerErrorException('Failed to fetch orders');
+    }
   }
 }
